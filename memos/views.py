@@ -1,7 +1,8 @@
-from django.http import HttpRequest, HttpResponse
+import markdown
+from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import render
 
-from memos.storage import list_memos, search_memos
+from memos.storage import MemoNotFound, get_memo, list_memos, search_memos
 
 
 def memo_list(request: HttpRequest) -> HttpResponse:
@@ -15,7 +16,12 @@ def memo_create(request: HttpRequest) -> HttpResponse:
 
 
 def memo_detail(request: HttpRequest, memo_id: str) -> HttpResponse:
-    raise NotImplementedError
+    try:
+        memo = get_memo(memo_id)
+    except MemoNotFound:
+        raise Http404 from None
+    body_html = markdown.markdown(memo.body, extensions=["extra"])
+    return render(request, "memos/detail.html", {"memo": memo, "body_html": body_html})
 
 
 def memo_edit(request: HttpRequest, memo_id: str) -> HttpResponse:

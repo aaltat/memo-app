@@ -79,6 +79,58 @@ class TestMemoListSearch:
         assert "Shopping list" not in content
         assert "Work notes" not in content
 
+
+class TestMemoDetailView:
+    def test_returns_200_for_existing_memo(self, client: Client, tmp_memo_dir: object) -> None:
+        memo = save_memo(title="My memo", body="some content")
+        response = client.get(f"/{memo.id}/")
+        assert response.status_code == 200
+
+    def test_returns_404_for_missing_memo(self, client: Client, tmp_memo_dir: object) -> None:
+        response = client.get("/nonexistent-id/")
+        assert response.status_code == 404
+
+    def test_shows_memo_title(self, client: Client, tmp_memo_dir: object) -> None:
+        memo = save_memo(title="My memo", body="some content")
+        response = client.get(f"/{memo.id}/")
+        assert b"My memo" in response.content
+
+    def test_renders_body_as_html(self, client: Client, tmp_memo_dir: object) -> None:
+        memo = save_memo(title="Formatted", body="**bold text**")
+        response = client.get(f"/{memo.id}/")
+        assert b"<strong>bold text</strong>" in response.content
+
+    def test_renders_markdown_heading(self, client: Client, tmp_memo_dir: object) -> None:
+        memo = save_memo(title="Headings", body="## Section title")
+        response = client.get(f"/{memo.id}/")
+        assert b"<h2>" in response.content
+        assert b"Section title" in response.content
+
+    def test_uses_detail_template(self, client: Client, tmp_memo_dir: object) -> None:
+        memo = save_memo(title="My memo", body="content")
+        response = client.get(f"/{memo.id}/")
+        assert "memos/detail.html" in [t.name for t in response.templates]
+
+    def test_uses_base_template(self, client: Client, tmp_memo_dir: object) -> None:
+        memo = save_memo(title="My memo", body="content")
+        response = client.get(f"/{memo.id}/")
+        assert "memos/base.html" in [t.name for t in response.templates]
+
+    def test_contains_edit_link(self, client: Client, tmp_memo_dir: object) -> None:
+        memo = save_memo(title="My memo", body="content")
+        response = client.get(f"/{memo.id}/")
+        assert f"/{memo.id}/edit/".encode() in response.content
+
+    def test_contains_delete_link(self, client: Client, tmp_memo_dir: object) -> None:
+        memo = save_memo(title="My memo", body="content")
+        response = client.get(f"/{memo.id}/")
+        assert f"/{memo.id}/delete/".encode() in response.content
+
+    def test_contains_back_to_list_link(self, client: Client, tmp_memo_dir: object) -> None:
+        memo = save_memo(title="My memo", body="content")
+        response = client.get(f"/{memo.id}/")
+        assert b'href="/"' in response.content
+
     def test_search_query_preserved_in_response(
         self, client: Client, populated_memo_dir: None
     ) -> None:

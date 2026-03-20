@@ -23,6 +23,7 @@ lint = [
     "ruff>=0.9",
     "mypy>=1.14",
     "django-stubs>=5.1",
+    "types-Markdown>=3.7",
     "robotframework-robocop>=6.0",
 ]
 

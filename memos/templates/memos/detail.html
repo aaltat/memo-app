@@ -1,0 +1,25 @@
+{% extends "memos/base.html" %}
+
+{% block content %}
+<article class="memo-detail">
+    <header class="memo-detail-header">
+        <a href="/" class="back-link">&larr; All memos</a>
+        <h1>{{ memo.title }}</h1>
+        <div class="memo-detail-meta">
+            <time>Created {{ memo.created_at|date:"N j, Y" }}</time>
+            {% if memo.updated_at != memo.created_at %}
+                &middot; <time>Updated {{ memo.updated_at|date:"N j, Y" }}</time>
+            {% endif %}
+        </div>
+    </header>
+
+    <div class="memo-body">
+        {{ body_html|safe }}
+    </div>
+
+    <footer class="memo-detail-actions">
+        <a href="/{{ memo.id }}/edit/" class="btn">Edit</a>
+        <a href="/{{ memo.id }}/delete/" class="btn btn-danger">Delete</a>
+    </footer>
+</article>
+{% endblock %}
