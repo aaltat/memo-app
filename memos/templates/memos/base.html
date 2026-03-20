@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en" class="{% block html_class %}{% endblock %}">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}Memos{% endblock %}</title>
+    <link rel="stylesheet" href="{% load static %}{% static 'memos/style.css' %}" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a href="{% url 'memos:list' %}" class="site-title">Memos</a>
+      <nav class="header-actions">
+        <a href="{% url 'memos:create' %}" class="btn btn-primary">+ New</a>
+        <button id="dark-toggle" class="btn btn-icon" aria-label="Toggle dark mode">☽</button>
+      </nav>
+    </header>
+
+    <main class="container">
+      {% block content %}{% endblock %}
+    </main>
+
+    <script>
+      (function () {
+        const toggle = document.getElementById('dark-toggle');
+        const apply = (dark) => document.documentElement.classList.toggle('dark', dark);
+        apply(localStorage.getItem('dark') === '1');
+        toggle.addEventListener('click', () => {
+          const dark = !document.documentElement.classList.contains('dark');
+          apply(dark);
+          localStorage.setItem('dark', dark ? '1' : '0');
+        });
+      })();
+    </script>
+  </body>
+</html>

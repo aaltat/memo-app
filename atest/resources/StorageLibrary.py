@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import os
 import tempfile
 from pathlib import Path
@@ -17,6 +18,8 @@ class StorageLibrary:
 
     def __init__(self) -> None:
         self._tmp_dir: tempfile.TemporaryDirectory[str] | None = None
+        self._server_mode: bool = False
+        self._created_ids: list[str] = []
 
     def _setup_django(self, memo_dir: Path) -> None:
         os.environ.setdefault("DJANGO_SETTINGS_MODULE", "memoproject.settings")
@@ -25,17 +28,46 @@ class StorageLibrary:
         django.conf.settings.MEMO_DIR = memo_dir
 
     @keyword("Set Up Storage")
-    def set_up_storage(self) -> None:
-        """Create a temporary memo directory and configure Django settings."""
-        self._tmp_dir = tempfile.TemporaryDirectory()
-        memo_dir = Path(self._tmp_dir.name) / "memos"
-        memo_dir.mkdir()
+    def set_up_storage(self, path: str = "") -> None:
+        """Create a memo directory and configure Django settings.
+
+        If ``path`` is given, writes to that directory (server mode — for browser
+        acceptance tests where a real server is running). Created memo IDs are
+        tracked so ``Tear Down Storage`` can clean them up without touching
+        pre-existing memos.
+
+        If ``path`` is omitted, a temporary directory is created (isolated mode —
+        for pure storage tests with no running server).
+        """
+        self._created_ids = []
+        if path:
+            memo_dir = Path(path)
+            memo_dir.mkdir(parents=True, exist_ok=True)
+            self._tmp_dir = None
+            self._server_mode = True
+        else:
+            self._tmp_dir = tempfile.TemporaryDirectory()
+            memo_dir = Path(self._tmp_dir.name) / "memos"
+            memo_dir.mkdir()
+            self._server_mode = False
         self._setup_django(memo_dir)
 
     @keyword("Tear Down Storage")
     def tear_down_storage(self) -> None:
-        """Remove the temporary memo directory."""
-        if self._tmp_dir:
+        """Clean up memos created during the test.
+
+        In server mode, only memos created by this test run are deleted so that
+        pre-existing memos are left untouched. In isolated mode the entire
+        temporary directory is removed.
+        """
+        if self._server_mode:
+            from memos.storage import MemoNotFound, delete_memo
+
+            for memo_id in self._created_ids:
+                with contextlib.suppress(MemoNotFound):
+                    delete_memo(memo_id)
+            self._created_ids = []
+        elif self._tmp_dir:
             self._tmp_dir.cleanup()
             self._tmp_dir = None
 
@@ -45,6 +77,8 @@ class StorageLibrary:
         from memos.storage import save_memo
 
         memo = save_memo(title=title, body=body, memo_id=memo_id)
+        if self._server_mode and memo_id is None:
+            self._created_ids.append(memo.id)
         return memo.id
 
     @keyword("List Memos")
@@ -79,7 +113,6 @@ class StorageLibrary:
     @keyword("Memo File Should Exist")
     def memo_file_should_exist(self, memo_id: str) -> None:
         """Verify that the .md file for memo_id exists on disk."""
-        assert self._tmp_dir is not None, "Storage not set up"
         from django.conf import settings
 
         path = Path(settings.MEMO_DIR) / f"{memo_id}.md"
@@ -89,7 +122,6 @@ class StorageLibrary:
     @keyword("Memo File Should Not Exist")
     def memo_file_should_not_exist(self, memo_id: str) -> None:
         """Verify that the .md file for memo_id does NOT exist on disk."""
-        assert self._tmp_dir is not None, "Storage not set up"
         from django.conf import settings
 
         path = Path(settings.MEMO_DIR) / f"{memo_id}.md"

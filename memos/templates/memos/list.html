@@ -1,0 +1,35 @@
+{% extends "memos/base.html" %}
+
+{% block content %}
+  <section class="list-header">
+    <form method="get" action="" role="search" class="search-form">
+      <input
+        type="search"
+        name="q"
+        value="{{ query|default:'' }}"
+        placeholder="Search memos…"
+        aria-label="Search memos"
+        class="search-input"
+        autofocus
+      />
+      <button type="submit" class="btn btn-secondary">Search</button>
+    </form>
+  </section>
+
+  {% if memos %}
+    <ul class="memo-list">
+      {% for memo in memos %}
+        <li class="memo-card">
+          <a href="{% url 'memos:detail' memo.id %}" class="memo-title">{{ memo.title }}</a>
+          <time class="memo-time" datetime="{{ memo.updated_at.isoformat }}">
+            {{ memo.updated_at|date:"d M Y, H:i" }}
+          </time>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="empty-state">
+      {% if query %}No memos match <strong>{{ query }}</strong>.{% else %}No memos yet. <a href="{% url 'memos:create' %}">Create one!</a>{% endif %}
+    </p>
+  {% endif %}
+{% endblock %}
