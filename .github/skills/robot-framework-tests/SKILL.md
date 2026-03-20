@@ -160,7 +160,6 @@ For `api`-tagged tests that use `RequestsLibrary` instead of Browser:
 
 ```robotframework
 GET Root Returns 200
-    [Documentation]    The memo list endpoint responds with HTTP 200.
     [Tags]    api
     GET    ${BASE_URL}/    expected_status=200
 ```
