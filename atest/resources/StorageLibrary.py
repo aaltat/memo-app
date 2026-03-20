@@ -119,6 +119,19 @@ class StorageLibrary:
         if not path.exists():
             raise AssertionError(f"Expected memo file {path} to exist, but it does not.")
 
+    @keyword("Delete All Memos")
+    def delete_all_memos(self, path: str = "data/memos") -> None:
+        """Delete every memo file in the given directory."""
+        import contextlib
+
+        from memos.storage import MemoNotFound, delete_memo, list_memos
+
+        memo_dir = Path(path)
+        self._setup_django(memo_dir)
+        for memo in list_memos():
+            with contextlib.suppress(MemoNotFound):
+                delete_memo(memo.id)
+
     @keyword("Memo File Should Not Exist")
     def memo_file_should_not_exist(self, memo_id: str) -> None:
         """Verify that the .md file for memo_id does NOT exist on disk."""
