@@ -1,0 +1,22 @@
+{% extends "memos/base.html" %}
+
+{% block content %}
+<article class="memo-form-container">
+    <header class="memo-form-header">
+        <a href="/{{ memo.id }}/" class="back-link">&larr; Back to memo</a>
+        <h1>Delete memo</h1>
+    </header>
+
+    <div class="delete-confirm">
+        <p>Are you sure you want to delete <strong>{{ memo.title }}</strong>? This cannot be undone.</p>
+    </div>
+
+    <form method="post" class="memo-form">
+        {% csrf_token %}
+        <div class="form-actions">
+            <button type="submit" class="btn btn-danger">Delete</button>
+            <a href="/{{ memo.id }}/" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</article>
+{% endblock %}

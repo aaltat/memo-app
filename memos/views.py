@@ -2,7 +2,7 @@ import markdown
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 
-from memos.storage import MemoNotFound, get_memo, list_memos, save_memo, search_memos
+from memos.storage import MemoNotFound, delete_memo, get_memo, list_memos, save_memo, search_memos
 
 
 def memo_list(request: HttpRequest) -> HttpResponse:
@@ -55,7 +55,14 @@ def memo_edit(request: HttpRequest, memo_id: str) -> HttpResponse:
 
 
 def memo_delete(request: HttpRequest, memo_id: str) -> HttpResponse:
-    raise NotImplementedError
+    try:
+        memo = get_memo(memo_id)
+    except MemoNotFound:
+        raise Http404 from None
+    if request.method == "POST":
+        delete_memo(memo_id)
+        return redirect("memos:list")
+    return render(request, "memos/delete.html", {"memo": memo})
 
 
 def memo_toggle_checklist(request: HttpRequest, memo_id: str, item_index: int) -> HttpResponse:

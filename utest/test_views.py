@@ -247,3 +247,49 @@ class TestMemoEditView:
     ) -> None:
         response = client.get("/?q=shopping")
         assert b"shopping" in response.content
+
+
+class TestMemoDeleteView:
+    def test_get_returns_200(self, client: Client, tmp_memo_dir: object) -> None:
+        memo = save_memo(title="To delete", body="content")
+        response = client.get(f"/{memo.id}/delete/")
+        assert response.status_code == 200
+
+    def test_get_returns_404_for_missing_memo(self, client: Client, tmp_memo_dir: object) -> None:
+        response = client.get("/nonexistent-id/delete/")
+        assert response.status_code == 404
+
+    def test_get_uses_delete_template(self, client: Client, tmp_memo_dir: object) -> None:
+        memo = save_memo(title="To delete", body="content")
+        response = client.get(f"/{memo.id}/delete/")
+        assert "memos/delete.html" in [t.name for t in response.templates]
+
+    def test_get_uses_base_template(self, client: Client, tmp_memo_dir: object) -> None:
+        memo = save_memo(title="To delete", body="content")
+        response = client.get(f"/{memo.id}/delete/")
+        assert "memos/base.html" in [t.name for t in response.templates]
+
+    def test_get_shows_memo_title(self, client: Client, tmp_memo_dir: object) -> None:
+        memo = save_memo(title="Important memo", body="content")
+        response = client.get(f"/{memo.id}/delete/")
+        assert b"Important memo" in response.content
+
+    def test_post_deletes_memo_and_redirects_to_list(
+        self, client: Client, tmp_memo_dir: object
+    ) -> None:
+        memo = save_memo(title="To delete", body="content")
+        response = client.post(f"/{memo.id}/delete/")
+        assert response.status_code == 302
+        assert response["Location"] == "/"
+
+    def test_post_memo_no_longer_in_list(self, client: Client, tmp_memo_dir: object) -> None:
+        from memos.storage import MemoNotFound, get_memo
+
+        memo = save_memo(title="Gone memo", body="content")
+        client.post(f"/{memo.id}/delete/")
+        with pytest.raises(MemoNotFound):
+            get_memo(memo.id)
+
+    def test_post_returns_404_for_missing_memo(self, client: Client, tmp_memo_dir: object) -> None:
+        response = client.post("/nonexistent-id/delete/")
+        assert response.status_code == 404
