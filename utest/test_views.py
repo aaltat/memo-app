@@ -181,6 +181,67 @@ class TestMemoCreateView:
         assert response.status_code == 200
         assert b'name="title"' in response.content
 
+
+class TestMemoEditView:
+    def test_get_returns_200(self, client: Client, tmp_memo_dir: object) -> None:
+        memo = save_memo(title="Original", body="original body")
+        response = client.get(f"/{memo.id}/edit/")
+        assert response.status_code == 200
+
+    def test_get_returns_404_for_missing_memo(self, client: Client, tmp_memo_dir: object) -> None:
+        response = client.get("/nonexistent-id/edit/")
+        assert response.status_code == 404
+
+    def test_get_uses_edit_template(self, client: Client, tmp_memo_dir: object) -> None:
+        memo = save_memo(title="Original", body="original body")
+        response = client.get(f"/{memo.id}/edit/")
+        assert "memos/edit.html" in [t.name for t in response.templates]
+
+    def test_get_uses_base_template(self, client: Client, tmp_memo_dir: object) -> None:
+        memo = save_memo(title="Original", body="original body")
+        response = client.get(f"/{memo.id}/edit/")
+        assert "memos/base.html" in [t.name for t in response.templates]
+
+    def test_get_prefills_title(self, client: Client, tmp_memo_dir: object) -> None:
+        memo = save_memo(title="Original title", body="body")
+        response = client.get(f"/{memo.id}/edit/")
+        assert b"Original title" in response.content
+
+    def test_get_prefills_body(self, client: Client, tmp_memo_dir: object) -> None:
+        memo = save_memo(title="T", body="original body content")
+        response = client.get(f"/{memo.id}/edit/")
+        assert b"original body content" in response.content
+
+    def test_post_updates_memo_and_redirects(self, client: Client, tmp_memo_dir: object) -> None:
+        memo = save_memo(title="Original", body="old body")
+        response = client.post(f"/{memo.id}/edit/", {"title": "Updated", "body": "new body"})
+        assert response.status_code == 302
+        assert response["Location"] == f"/{memo.id}/"
+
+    def test_post_saves_new_title(self, client: Client, tmp_memo_dir: object) -> None:
+        from memos.storage import get_memo
+
+        memo = save_memo(title="Original", body="body")
+        client.post(f"/{memo.id}/edit/", {"title": "New title", "body": "body"})
+        assert get_memo(memo.id).title == "New title"
+
+    def test_post_saves_new_body(self, client: Client, tmp_memo_dir: object) -> None:
+        from memos.storage import get_memo
+
+        memo = save_memo(title="T", body="old body")
+        client.post(f"/{memo.id}/edit/", {"title": "T", "body": "new body"})
+        assert get_memo(memo.id).body == "new body"
+
+    def test_post_empty_title_returns_form(self, client: Client, tmp_memo_dir: object) -> None:
+        memo = save_memo(title="Original", body="body")
+        response = client.post(f"/{memo.id}/edit/", {"title": "", "body": "body"})
+        assert response.status_code == 200
+        assert b'name="title"' in response.content
+
+    def test_post_returns_404_for_missing_memo(self, client: Client, tmp_memo_dir: object) -> None:
+        response = client.post("/nonexistent-id/edit/", {"title": "T", "body": ""})
+        assert response.status_code == 404
+
     def test_search_query_preserved_in_response(
         self, client: Client, populated_memo_dir: None
     ) -> None:

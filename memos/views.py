@@ -32,7 +32,26 @@ def memo_detail(request: HttpRequest, memo_id: str) -> HttpResponse:
 
 
 def memo_edit(request: HttpRequest, memo_id: str) -> HttpResponse:
-    raise NotImplementedError
+    try:
+        memo = get_memo(memo_id)
+    except MemoNotFound:
+        raise Http404 from None
+    if request.method == "POST":
+        title = request.POST.get("title", "").strip()
+        body = request.POST.get("body", "")
+        if title:
+            save_memo(title=title, body=body, memo_id=memo_id)
+            return redirect("memos:detail", memo_id=memo_id)
+        return render(request, "memos/edit.html", {"memo": memo, "title": title, "body": body})
+    return render(
+        request,
+        "memos/edit.html",
+        {
+            "memo": memo,
+            "title": memo.title,
+            "body": memo.body,
+        },
+    )
 
 
 def memo_delete(request: HttpRequest, memo_id: str) -> HttpResponse:
