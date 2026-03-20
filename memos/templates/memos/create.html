@@ -1,0 +1,39 @@
+{% extends "memos/base.html" %}
+
+{% block content %}
+<article class="memo-form-container">
+    <header class="memo-form-header">
+        <a href="/" class="back-link">&larr; All memos</a>
+        <h1>New memo</h1>
+    </header>
+
+    <form method="post" class="memo-form">
+        {% csrf_token %}
+        <div class="form-field">
+            <label for="id_title">Title</label>
+            <input
+                type="text"
+                id="id_title"
+                name="title"
+                value="{{ title|default:'' }}"
+                placeholder="Memo title"
+                autofocus
+                required
+            />
+        </div>
+        <div class="form-field">
+            <label for="id_body">Body</label>
+            <textarea
+                id="id_body"
+                name="body"
+                rows="16"
+                placeholder="Write in Markdown…"
+            >{{ body|default:'' }}</textarea>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn">Save</button>
+            <a href="/" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</article>
+{% endblock %}

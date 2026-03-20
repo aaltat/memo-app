@@ -131,6 +131,56 @@ class TestMemoDetailView:
         response = client.get(f"/{memo.id}/")
         assert b'href="/"' in response.content
 
+
+class TestMemoCreateView:
+    def test_get_returns_200(self, client: Client, tmp_memo_dir: object) -> None:
+        response = client.get("/new/")
+        assert response.status_code == 200
+
+    def test_get_uses_create_template(self, client: Client, tmp_memo_dir: object) -> None:
+        response = client.get("/new/")
+        assert "memos/create.html" in [t.name for t in response.templates]
+
+    def test_get_uses_base_template(self, client: Client, tmp_memo_dir: object) -> None:
+        response = client.get("/new/")
+        assert "memos/base.html" in [t.name for t in response.templates]
+
+    def test_get_shows_title_input(self, client: Client, tmp_memo_dir: object) -> None:
+        response = client.get("/new/")
+        assert b'name="title"' in response.content
+
+    def test_get_shows_body_textarea(self, client: Client, tmp_memo_dir: object) -> None:
+        response = client.get("/new/")
+        assert b'name="body"' in response.content
+
+    def test_post_creates_memo_and_redirects(self, client: Client, tmp_memo_dir: object) -> None:
+        response = client.post("/new/", {"title": "New memo", "body": "some content"})
+        assert response.status_code == 302
+
+    def test_post_redirects_to_detail(self, client: Client, tmp_memo_dir: object) -> None:
+        from memos.storage import list_memos
+
+        response = client.post("/new/", {"title": "New memo", "body": "some content"})
+        memos = list_memos()
+        assert response["Location"] == f"/{memos[0].id}/"
+
+    def test_post_saves_title(self, client: Client, tmp_memo_dir: object) -> None:
+        from memos.storage import list_memos
+
+        client.post("/new/", {"title": "My title", "body": ""})
+        assert list_memos()[0].title == "My title"
+
+    def test_post_saves_body(self, client: Client, tmp_memo_dir: object) -> None:
+        from memos.storage import list_memos
+
+        client.post("/new/", {"title": "T", "body": "body content"})
+        assert list_memos()[0].body == "body content"
+
+    def test_post_empty_title_returns_form(self, client: Client, tmp_memo_dir: object) -> None:
+        response = client.post("/new/", {"title": "", "body": "some content"})
+        assert response.status_code == 200
+        assert b'name="title"' in response.content
+
     def test_search_query_preserved_in_response(
         self, client: Client, populated_memo_dir: None
     ) -> None:

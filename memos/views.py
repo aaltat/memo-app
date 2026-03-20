@@ -1,8 +1,8 @@
 import markdown
 from django.http import Http404, HttpRequest, HttpResponse
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 
-from memos.storage import MemoNotFound, get_memo, list_memos, search_memos
+from memos.storage import MemoNotFound, get_memo, list_memos, save_memo, search_memos
 
 
 def memo_list(request: HttpRequest) -> HttpResponse:
@@ -12,7 +12,14 @@ def memo_list(request: HttpRequest) -> HttpResponse:
 
 
 def memo_create(request: HttpRequest) -> HttpResponse:
-    raise NotImplementedError
+    if request.method == "POST":
+        title = request.POST.get("title", "").strip()
+        body = request.POST.get("body", "")
+        if title:
+            memo = save_memo(title=title, body=body)
+            return redirect("memos:detail", memo_id=memo.id)
+        return render(request, "memos/create.html", {"title": title, "body": body})
+    return render(request, "memos/create.html", {})
 
 
 def memo_detail(request: HttpRequest, memo_id: str) -> HttpResponse:
