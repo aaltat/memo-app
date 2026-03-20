@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -103,3 +104,17 @@ def search_memos(query: str) -> list[Memo]:
         return memos
     q = query.lower()
     return [m for m in memos if q in m.title.lower() or q in m.body.lower()]
+
+
+_CHECKBOX_LINE = re.compile(r"^- \[[ x]\] ", re.MULTILINE)
+
+
+def toggle_checklist_item(body: str, item_index: int) -> str:
+    """Flip the checked state of the item_index-th checkbox line in body."""
+    matches = list(_CHECKBOX_LINE.finditer(body))
+    if item_index < 0 or item_index >= len(matches):
+        raise IndexError(f"No checkbox at index {item_index}")
+    match = matches[item_index]
+    chunk = body[match.start() : match.end()]
+    flipped = chunk.replace("[ ]", "[x]") if "[ ]" in chunk else chunk.replace("[x]", "[ ]")
+    return body[: match.start()] + flipped + body[match.end() :]

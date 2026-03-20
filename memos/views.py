@@ -1,8 +1,41 @@
+import re
+
 import markdown
-from django.http import Http404, HttpRequest, HttpResponse
+from django.http import Http404, HttpRequest, HttpResponse, HttpResponseNotAllowed
 from django.shortcuts import redirect, render
 
-from memos.storage import MemoNotFound, delete_memo, get_memo, list_memos, save_memo, search_memos
+from memos.storage import (
+    MemoNotFound,
+    delete_memo,
+    get_memo,
+    list_memos,
+    save_memo,
+    search_memos,
+    toggle_checklist_item,
+)
+
+_TASK_RE = re.compile(r"<li>\[([ x])\] ")
+
+
+def _render_body(body: str, memo_id: str) -> str:
+    """Render body Markdown to HTML with interactive HTMX checkboxes."""
+    html = markdown.markdown(body, extensions=["extra"])
+    counter = [0]
+
+    def _replace(match: re.Match[str]) -> str:
+        idx = counter[0]
+        counter[0] += 1
+        checked = "checked " if match.group(1) == "x" else ""
+        return (
+            f'<li class="task-list-item">'
+            f'<input type="checkbox" {checked}'
+            f'hx-post="/{memo_id}/toggle/{idx}/" '
+            f'hx-target=".memo-body" '
+            f'hx-swap="innerHTML" '
+            f'hx-trigger="change"> '
+        )
+
+    return _TASK_RE.sub(_replace, html)
 
 
 def memo_list(request: HttpRequest) -> HttpResponse:
@@ -27,7 +60,7 @@ def memo_detail(request: HttpRequest, memo_id: str) -> HttpResponse:
         memo = get_memo(memo_id)
     except MemoNotFound:
         raise Http404 from None
-    body_html = markdown.markdown(memo.body, extensions=["extra"])
+    body_html = _render_body(memo.body, memo_id)
     return render(request, "memos/detail.html", {"memo": memo, "body_html": body_html})
 
 
@@ -66,4 +99,16 @@ def memo_delete(request: HttpRequest, memo_id: str) -> HttpResponse:
 
 
 def memo_toggle_checklist(request: HttpRequest, memo_id: str, item_index: int) -> HttpResponse:
-    raise NotImplementedError
+    if request.method != "POST":
+        return HttpResponseNotAllowed(["POST"])
+    try:
+        memo = get_memo(memo_id)
+    except MemoNotFound:
+        raise Http404 from None
+    try:
+        new_body = toggle_checklist_item(memo.body, item_index)
+    except IndexError:
+        raise Http404 from None
+    save_memo(title=memo.title, body=new_body, memo_id=memo_id)
+    updated = get_memo(memo_id)
+    return HttpResponse(_render_body(updated.body, memo_id))

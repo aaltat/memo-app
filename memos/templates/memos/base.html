@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{% block title %}Memos{% endblock %}</title>
     <link rel="stylesheet" href="{% load static %}{% static 'memos/style.css' %}" />
+    <script src="https://unpkg.com/htmx.org@2.0.4" crossorigin="anonymous"></script>
+    <script>
+      document.addEventListener('htmx:configRequest', (evt) => {
+        evt.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
+      });
+    </script>
   </head>
   <body>
     <header class="site-header">

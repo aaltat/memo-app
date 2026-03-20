@@ -1,6 +1,14 @@
 import pytest
 
-from memos.storage import MemoNotFound, delete_memo, get_memo, list_memos, save_memo, search_memos
+from memos.storage import (
+    MemoNotFound,
+    delete_memo,
+    get_memo,
+    list_memos,
+    save_memo,
+    search_memos,
+    toggle_checklist_item,
+)
 
 
 class TestListMemos:
@@ -121,3 +129,36 @@ class TestSearchMemos:
     def test_no_match_returns_empty_list(self, tmp_memo_dir: object) -> None:
         save_memo(title="Hello", body="World")
         assert search_memos("xyz123") == []
+
+
+class TestToggleChecklistItem:
+    def test_toggles_unchecked_to_checked(self) -> None:
+        result = toggle_checklist_item("- [ ] buy milk", 0)
+        assert "- [x] buy milk" in result
+
+    def test_toggles_checked_to_unchecked(self) -> None:
+        result = toggle_checklist_item("- [x] done item", 0)
+        assert "- [ ] done item" in result
+
+    def test_toggles_second_item_by_index(self) -> None:
+        body = "- [ ] first\n- [ ] second\n- [ ] third"
+        result = toggle_checklist_item(body, 1)
+        assert "- [ ] first" in result
+        assert "- [x] second" in result
+        assert "- [ ] third" in result
+
+    def test_raises_index_error_for_out_of_range(self) -> None:
+        with pytest.raises(IndexError):
+            toggle_checklist_item("- [ ] only one", 1)
+
+    def test_does_not_affect_non_checkbox_lines(self) -> None:
+        body = "intro text\n- [ ] task\ntrailing text"
+        result = toggle_checklist_item(body, 0)
+        assert "intro text" in result
+        assert "trailing text" in result
+
+    def test_mixed_states_toggle_independently(self) -> None:
+        body = "- [x] checked\n- [ ] unchecked"
+        result = toggle_checklist_item(body, 0)
+        assert "- [ ] checked" in result
+        assert "- [ ] unchecked" in result

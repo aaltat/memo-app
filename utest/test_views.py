@@ -1,7 +1,7 @@
 import pytest
 from django.test import Client
 
-from memos.storage import save_memo
+from memos.storage import get_memo, save_memo
 
 
 @pytest.fixture
@@ -293,3 +293,41 @@ class TestMemoDeleteView:
     def test_post_returns_404_for_missing_memo(self, client: Client, tmp_memo_dir: object) -> None:
         response = client.post("/nonexistent-id/delete/")
         assert response.status_code == 404
+
+
+class TestMemoToggleChecklistView:
+    def test_post_returns_200(self, client: Client, tmp_memo_dir: object) -> None:
+        memo = save_memo(title="T", body="- [ ] item")
+        response = client.post(f"/{memo.id}/toggle/0/")
+        assert response.status_code == 200
+
+    def test_post_returns_html_fragment(self, client: Client, tmp_memo_dir: object) -> None:
+        memo = save_memo(title="T", body="- [ ] item")
+        response = client.post(f"/{memo.id}/toggle/0/")
+        assert b"<li" in response.content
+
+    def test_post_toggles_unchecked_to_checked(self, client: Client, tmp_memo_dir: object) -> None:
+        memo = save_memo(title="T", body="- [ ] buy milk")
+        client.post(f"/{memo.id}/toggle/0/")
+        assert "- [x] buy milk" in get_memo(memo.id).body
+
+    def test_post_toggles_checked_to_unchecked(self, client: Client, tmp_memo_dir: object) -> None:
+        memo = save_memo(title="T", body="- [x] done item")
+        client.post(f"/{memo.id}/toggle/0/")
+        assert "- [ ] done item" in get_memo(memo.id).body
+
+    def test_post_returns_404_for_missing_memo(self, client: Client, tmp_memo_dir: object) -> None:
+        response = client.post("/nonexistent/toggle/0/")
+        assert response.status_code == 404
+
+    def test_post_returns_404_for_out_of_range_index(
+        self, client: Client, tmp_memo_dir: object
+    ) -> None:
+        memo = save_memo(title="T", body="- [ ] only one")
+        response = client.post(f"/{memo.id}/toggle/5/")
+        assert response.status_code == 404
+
+    def test_get_returns_405(self, client: Client, tmp_memo_dir: object) -> None:
+        memo = save_memo(title="T", body="- [ ] item")
+        response = client.get(f"/{memo.id}/toggle/0/")
+        assert response.status_code == 405
