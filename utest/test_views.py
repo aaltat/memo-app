@@ -331,3 +331,30 @@ class TestMemoToggleChecklistView:
         memo = save_memo(title="T", body="- [ ] item")
         response = client.get(f"/{memo.id}/toggle/0/")
         assert response.status_code == 405
+
+
+class TestMemoListDeleteButton:
+    def test_list_shows_delete_button_for_each_memo(
+        self, client: Client, tmp_memo_dir: object
+    ) -> None:
+        memo = save_memo(title="Test memo", body="")
+        response = client.get("/")
+        assert f"/{memo.id}/delete/".encode() in response.content
+
+    def test_htmx_post_returns_200(self, client: Client, tmp_memo_dir: object) -> None:
+        memo = save_memo(title="T", body="")
+        response = client.post(f"/{memo.id}/delete/", HTTP_HX_REQUEST="true")
+        assert response.status_code == 200
+
+    def test_htmx_post_returns_empty_body(self, client: Client, tmp_memo_dir: object) -> None:
+        memo = save_memo(title="T", body="")
+        response = client.post(f"/{memo.id}/delete/", HTTP_HX_REQUEST="true")
+        assert response.content == b""
+
+    def test_htmx_post_deletes_memo(self, client: Client, tmp_memo_dir: object) -> None:
+        from memos.storage import MemoNotFound
+
+        memo = save_memo(title="T", body="")
+        client.post(f"/{memo.id}/delete/", HTTP_HX_REQUEST="true")
+        with pytest.raises(MemoNotFound):
+            get_memo(memo.id)

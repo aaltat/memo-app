@@ -94,6 +94,8 @@ def memo_delete(request: HttpRequest, memo_id: str) -> HttpResponse:
         raise Http404 from None
     if request.method == "POST":
         delete_memo(memo_id)
+        if request.headers.get("HX-Request"):
+            return HttpResponse("")
         return redirect("memos:list")
     return render(request, "memos/delete.html", {"memo": memo})
 

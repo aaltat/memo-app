@@ -79,6 +79,22 @@ Empty Search Shows All Memos
     Get Text    body    *=    Apple
     Get Text    body    *=    Banana
 
+Delete Button Is Present On Each Memo Card
+    [Documentation]    Each memo card in the list shows a delete button.
+    [Tags]    browser
+    ${id}=    Create Memo Via Storage    title=Has Delete Button    body=body text
+    Go To    ${BASE_URL}
+    Get Element    form[action="/${id}/delete/"] button[type="submit"]
+
+Clicking Delete Button Removes Memo From List
+    [Documentation]    Clicking the delete button on a memo card removes it from the list without a page reload.
+    [Tags]    browser
+    ${id}=    Create Memo Via Storage    title=Memo To Delete    body=goodbye
+    Go To    ${BASE_URL}
+    Get Text    body    *=    Memo To Delete
+    Click    form[action="/${id}/delete/"] button[type="submit"]
+    Get Text    body    not contains    Memo To Delete
+
 No Match Shows No Memo Titles
     [Documentation]    A search with no matching memos shows an empty result.
     [Tags]    browser
@@ -103,4 +119,5 @@ Open Browser Session
 Create Memo Via Storage
     [Documentation]    Save a memo directly via storage (no UI interaction).
     [Arguments]    ${title}    ${body}=${EMPTY}
-    Save Memo    title=${title}    body=${body}
+    ${id}=    Save Memo    title=${title}    body=${body}
+    RETURN    ${id}

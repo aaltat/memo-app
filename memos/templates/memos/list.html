@@ -24,6 +24,13 @@
           <time class="memo-time" datetime="{{ memo.updated_at.isoformat }}">
             {{ memo.updated_at|date:"d M Y, H:i" }}
           </time>
+          <form method="post" action="{% url 'memos:delete' memo.id %}" class="memo-delete-form"
+                hx-post="{% url 'memos:delete' memo.id %}"
+                hx-target="closest li"
+                hx-swap="outerHTML">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+          </form>
         </li>
       {% endfor %}
     </ul>

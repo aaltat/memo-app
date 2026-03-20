@@ -56,6 +56,7 @@ Toggle State Is Persisted
     ${id}=    Create Memo Via Storage    title=Tasks    body=- [ ] persistent item
     Go To    ${BASE_URL}/${id}/
     Click    input[type="checkbox"]
+    Wait For Load State    networkidle
     Go To    ${BASE_URL}/${id}/
     Get Property    input[type="checkbox"]    checked    ==    ${True}
 
