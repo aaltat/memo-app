@@ -8,3 +8,18 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Django
+db.sqlite3
+
+# Memo data files (runtime data, not source code)
+data/memos/*.md
+
+# Robot Framework outputs
+atest/output/
+output.xml
+log.html
+report.html
+
+# mypy cache
+.mypy_cache/

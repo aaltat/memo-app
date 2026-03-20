@@ -1,0 +1,13 @@
+services:
+  memo:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/data
+    environment:
+      DJANGO_SECRET_KEY: "change-me-before-deploying"
+      DJANGO_DEBUG: "false"
+      DJANGO_ALLOWED_HOSTS: "localhost 127.0.0.1 0.0.0.0"
+      MEMO_DIR: "/data/memos"
+    restart: unless-stopped

@@ -46,4 +46,3 @@ plugins = ["mypy_django_plugin.main"]
 django_settings_module = "memoproject.settings"
 
 [tool.robocop]
-paths = ["atest"]
