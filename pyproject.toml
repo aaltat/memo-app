@@ -1,0 +1,49 @@
+[project]
+name = "memo-app"
+version = "0.1.0"
+description = "Single-user home-network memo app"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "django>=5.1",
+    "python-frontmatter>=1.1",
+    "markdown>=3.7",
+    "gunicorn>=23.0",
+]
+
+[dependency-groups]
+test = [
+    "pytest>=8.3",
+    "pytest-django>=4.9",
+    "robotframework>=7.4.2",
+    "robotframework-browser>=19.0",
+    "robotframework-requests>=0.9",
+]
+lint = [
+    "ruff>=0.9",
+    "mypy>=1.14",
+    "django-stubs>=5.1",
+    "robotframework-robocop>=6.0",
+]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "memoproject.settings"
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.12"
+disallow_untyped_defs = true
+ignore_missing_imports = true
+plugins = ["mypy_django_plugin.main"]
+
+[tool.django-stubs]
+django_settings_module = "memoproject.settings"
+
+[tool.robocop]
+paths = ["atest"]
