@@ -162,3 +162,67 @@ class TestToggleChecklistItem:
         result = toggle_checklist_item(body, 0)
         assert "- [ ] checked" in result
         assert "- [ ] unchecked" in result
+
+
+class TestStorageLogging:
+    def test_save_memo_create_logs_info(
+        self, tmp_memo_dir: object, memos_caplog: pytest.LogCaptureFixture
+    ) -> None:
+        memo = save_memo(title="Log test", body="hello")
+        assert f"Created memo {memo.id}" in memos_caplog.text
+        assert "Log test" in memos_caplog.text
+
+    def test_save_memo_update_logs_info(
+        self, tmp_memo_dir: object, memos_caplog: pytest.LogCaptureFixture
+    ) -> None:
+        memo = save_memo(title="Original", body="body")
+        save_memo(title="Updated", body="new body", memo_id=memo.id)
+        assert f"Updated memo {memo.id}" in memos_caplog.text
+        assert "Updated" in memos_caplog.text
+
+    def test_get_memo_missing_logs_warning(
+        self, tmp_memo_dir: object, memos_caplog: pytest.LogCaptureFixture
+    ) -> None:
+        with pytest.raises(MemoNotFound):
+            get_memo("no-such-id")
+        assert "Memo not found" in memos_caplog.text
+        assert "no-such-id" in memos_caplog.text
+
+    def test_delete_memo_logs_info(
+        self, tmp_memo_dir: object, memos_caplog: pytest.LogCaptureFixture
+    ) -> None:
+        memo = save_memo(title="Bye", body="")
+        delete_memo(memo.id)
+        assert f"Deleted memo {memo.id}" in memos_caplog.text
+
+    def test_delete_memo_missing_logs_warning(
+        self, tmp_memo_dir: object, memos_caplog: pytest.LogCaptureFixture
+    ) -> None:
+        with pytest.raises(MemoNotFound):
+            delete_memo("ghost-id")
+        assert "Delete failed, memo not found" in memos_caplog.text
+        assert "ghost-id" in memos_caplog.text
+
+    def test_list_memos_logs_debug(
+        self, tmp_memo_dir: object, memos_caplog: pytest.LogCaptureFixture
+    ) -> None:
+        save_memo(title="A", body="")
+        save_memo(title="B", body="")
+        list_memos()
+        assert "Listed 2 memos" in memos_caplog.text
+
+    def test_search_memos_logs_debug(
+        self, tmp_memo_dir: object, memos_caplog: pytest.LogCaptureFixture
+    ) -> None:
+        save_memo(title="Apples", body="")
+        save_memo(title="Bananas", body="")
+        search_memos("apples")
+        assert "Search query='apples'" in memos_caplog.text
+        assert "returned 1 of 2 memos" in memos_caplog.text
+
+    def test_toggle_checklist_item_out_of_range_logs_warning(
+        self, memos_caplog: pytest.LogCaptureFixture
+    ) -> None:
+        with pytest.raises(IndexError):
+            toggle_checklist_item("- [ ] only one", 5)
+        assert "Toggle failed: no checkbox at index 5" in memos_caplog.text
